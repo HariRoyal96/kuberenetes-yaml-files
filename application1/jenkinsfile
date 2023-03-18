@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    stages{
+        stage("git_checkout"){
+            steps{
+                git"url"
+            }
+        }
+        stage("build_code"){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage("code_analysis"){
+            steps{
+                sh "mvn sonar:sonar"
+            }
+        }
+        stage("docker_image_build"){
+            steps{
+                sh "docker build -t nginx -f docker ."
+            }
+            stage("docker_push"){
+                steps{
+                    sh "docker login -U username -P ${docker_cred}"
+                    sh "docker image push registry_name"
+                }
+            }
+            stage("deploy_to_k8s"){
+                steps{
+                    sh "kubectl apply -f deployment.yml"
+                }
+            }
+        }
+    }
+}
